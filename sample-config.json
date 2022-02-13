@@ -1,0 +1,17 @@
+{
+  "Environments": [
+    {
+      "name": "localhost",
+      "config": {
+        "mercureHubUrl": {
+          "displayName": "MERCURE HUB URL",
+          "value": "https://localhost/.well-known"
+        },
+        "jwtSecretKey": {
+          "value": "!ChangeMe!"
+        }
+      }
+    }
+  ]
+}
+
