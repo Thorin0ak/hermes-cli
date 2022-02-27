@@ -31,7 +31,7 @@ class Test {
         const params = new URLSearchParams({
             topic: this.testConfiguration.topicUri,
             data: JSON.stringify({foo: 'bar'}),
-            type: 'scheduling_slots',
+            type: 'test_mercure_events',
             private: 'on',
         });
 

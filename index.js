@@ -20,7 +20,6 @@ program
     .description('CLI to publish events to Mercure Hub')
     .version('0.1.0');
 program
-    .option('-o, --occurrences <number>', 'number of events to publish')
     .addOption(new Option('-o, --occurrences <number>', 'number of events to publish').argParser(parseInt))
     .option('-uri, --topic-uri <uri>', 'topic URI for subscription', 'sse://pxc.dev/123456/{term}')
     .addOption(new Option('-t, --type <data>', 'event type')
@@ -32,7 +31,7 @@ const testConfiguration = {
     minWaitTime: 0,
     maxWaitTime: 2000,
     occurrences: 5,
-    topicUri: 'sse://pxc.dev/123456/{term}'
+    topicUri: 'sse://pxc.dev/123456/test_mercure_events'
 };
 let isDebugEnabled = true;
 
