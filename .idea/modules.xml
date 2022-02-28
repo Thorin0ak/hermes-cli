@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/sse-cli.iml" filepath="$PROJECT_DIR$/.idea/sse-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/mercure-test.iml" filepath="$PROJECT_DIR$/.idea/mercure-test.iml" />
     </modules>
   </component>
 </project>
