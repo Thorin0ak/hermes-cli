@@ -1,4 +1,4 @@
-package hermes_cli
+package hermescli
 
 import (
 	"fmt"
@@ -17,20 +17,25 @@ func NewCli(config *root.Config) *cli.App {
 				Aliases:     []string{"n"},
 				Value:       5,
 				Usage:       "number of events to publish",
-				Destination: &config.Mercure.NumEvents,
+				Destination: &config.Hermes.NumEvents,
 			},
 			&cli.StringFlag{
 				Name:        "topic-uri",
 				Aliases:     []string{"uri"},
 				Value:       "sse://pxc.dev/123456/test_mercure_events",
 				Usage:       "number of events to publish",
-				Destination: &config.Mercure.TopicUri,
+				Destination: &config.Hermes.TopicUri,
 			},
 		},
 		Action: func(c *cli.Context) error {
+			var envs []string
+			for i := 0; i < len(config.Mercure.Envs); i++ {
+				envs = append(envs, config.Mercure.Envs[i].Name)
+			}
+
 			prompt := promptui.Select{
 				Label: "Select the Mercure Hub environment",
-				Items: []string{"localhost", "test", "prod"},
+				Items: envs,
 			}
 			_, result, err := prompt.Run()
 
@@ -39,7 +44,21 @@ func NewCli(config *root.Config) *cli.App {
 				return err
 			}
 
-			fmt.Printf("You chose %q\n", result)
+			//fmt.Printf("You chose %q\n", result)
+			var env root.MercureConfig
+			for _, data := range config.Mercure.Envs {
+				if data.Name == result {
+					env = data
+				}
+			}
+			// set the active environment
+			config.Hermes.ActiveEnv = result
+
+			fmt.Printf("ENVIRONMENT: %s\n", env.Name)
+			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
+
+			// TODO: get new test, run test
+
 			return nil
 		},
 	}
