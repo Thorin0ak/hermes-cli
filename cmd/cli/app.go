@@ -5,6 +5,7 @@ import (
 	root "github.com/Thorin0ak/mercure-test/internal"
 	"github.com/Thorin0ak/mercure-test/internal/config"
 	"github.com/Thorin0ak/mercure-test/internal/hermescli"
+	"github.com/Thorin0ak/mercure-test/internal/loadtest"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -13,6 +14,7 @@ import (
 type HermesCli struct {
 	config *root.Config
 	app    *cli.App
+	test   *loadtest.Test
 }
 
 func (h *HermesCli) Initialize() {

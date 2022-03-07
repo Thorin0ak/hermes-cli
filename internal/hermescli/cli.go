@@ -3,8 +3,10 @@ package hermescli
 import (
 	"fmt"
 	root "github.com/Thorin0ak/mercure-test/internal"
+	test2 "github.com/Thorin0ak/mercure-test/internal/loadtest"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
+	"log"
 )
 
 func NewCli(config *root.Config) *cli.App {
@@ -58,6 +60,15 @@ func NewCli(config *root.Config) *cli.App {
 			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
 
 			// TODO: get new test, run test
+			test, err := test2.NewTest(config, nil)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			err = test.Run()
+			if err != nil {
+				log.Fatalln(err)
+			}
 
 			return nil
 		},
