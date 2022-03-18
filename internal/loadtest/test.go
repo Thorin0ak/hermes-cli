@@ -4,11 +4,13 @@ import (
 	"fmt"
 	root "github.com/Thorin0ak/mercure-test/internal"
 	"github.com/Thorin0ak/mercure-test/internal/token"
+	"github.com/cheggaaa/pb/v3"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -55,18 +57,20 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 		return
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Could not parse response body: %v\n", err)
 	}
 
-	log.Printf("Mercure ACK: %v\n", string(body))
+	//log.Printf("Mercure ACK: %v\n", string(body))
 }
 
 func (t *Test) Run(headers http.Header) {
 	client := http.Client{}
 	durationStream := make(chan time.Duration)
 	var err error
+	bar := pb.StartNew(t.config.Hermes.NumEvents)
+	bar.SetWriter(os.Stdout)
 
 	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15)
 	if err != nil {
@@ -89,9 +93,9 @@ func (t *Test) Run(headers http.Header) {
 	go func() {
 		defer close(durationStream)
 		for i := 0; i < t.config.Hermes.NumEvents; i++ {
+			bar.Increment()
 			begin := time.Now()
 			w := rand.Intn(t.config.Hermes.MaxWaitTimes-t.config.Hermes.MinWaitTimes) + t.config.Hermes.MinWaitTimes
-			log.Printf("interval: %d", w)
 			time.Sleep(time.Millisecond * time.Duration(w))
 			publish(&client, t.hubUrl, encodedPayload, h)
 			since := time.Since(begin)
@@ -99,9 +103,9 @@ func (t *Test) Run(headers http.Header) {
 		}
 	}()
 
-	for duration := range durationStream {
-		fmt.Printf("%v taken to publish update\n", duration)
+	for range durationStream {
 	}
+	bar.Finish()
 }
 
 func NewTest(config *root.Config) (*Test, error) {
