@@ -60,15 +60,12 @@ func NewCli(config *root.Config) *cli.App {
 			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
 
 			// TODO: get new test, run test
-			test, err := test2.NewTest(config, nil)
+			test, err := test2.NewTest(config)
 			if err != nil {
 				log.Fatalln(err)
 			}
 
-			err = test.Run()
-			if err != nil {
-				log.Fatalln(err)
-			}
+			test.Run(nil)
 
 			return nil
 		},

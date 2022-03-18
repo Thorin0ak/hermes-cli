@@ -4,7 +4,9 @@ import (
 	"fmt"
 	root "github.com/Thorin0ak/mercure-test/internal"
 	"github.com/Thorin0ak/mercure-test/internal/token"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -21,9 +23,9 @@ type Tester interface {
 }
 
 type Test struct {
-	req        *http.Request
 	config     *root.Config
-	tokenMaker *token.Maker
+	tokenMaker token.Maker
+	hubUrl     string
 }
 
 func generateMockSseData(topicUri string, evtType string) url.Values {
@@ -35,23 +37,74 @@ func generateMockSseData(topicUri string, evtType string) url.Values {
 	return data
 }
 
-func (t *Test) Run() error {
-	client := http.Client{}
-	resp, err := client.Do(t.req)
+func publish(client *http.Client, url string, payload string, headers http.Header) {
+	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(payload))
 	if err != nil {
-		fmt.Printf("could not POST to Mercure Hub: %v", err)
-		return fmt.Errorf("got error %s", err.Error())
+		log.Fatalf("Could not create new HTP request: %v", err)
 	}
+	req.Header = headers
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("could not POST to Mercure Hub: %v\n", err)
+	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode > 299 {
-		resp.Body.Close()
-		return fmt.Errorf("POST request to Mercure Hub received error: %d", resp.StatusCode)
+		log.Printf("Mercure returned error code %v", resp.StatusCode)
+		return
 	}
 
-	return nil
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Could not parse response body: %v\n", err)
+	}
+
+	log.Printf("Mercure ACK: %v\n", string(body))
 }
 
-func NewTest(config *root.Config, headers http.Header) (*Test, error) {
+func (t *Test) Run(headers http.Header) {
+	client := http.Client{}
+	durationStream := make(chan time.Duration)
+	var err error
+
+	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	h := http.Header{}
+	h.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
+	// override headers
+	if len(headers) > 0 {
+		for k, v := range headers {
+			h.Set(k, strings.Join(v[:], ","))
+		}
+	}
+
+	payload := generateMockSseData(t.config.Hermes.TopicUri, t.config.Hermes.EventType)
+	encodedPayload := payload.Encode()
+
+	go func() {
+		defer close(durationStream)
+		for i := 0; i < t.config.Hermes.NumEvents; i++ {
+			begin := time.Now()
+			w := rand.Intn(t.config.Hermes.MaxWaitTimes-t.config.Hermes.MinWaitTimes) + t.config.Hermes.MinWaitTimes
+			log.Printf("interval: %d", w)
+			time.Sleep(time.Millisecond * time.Duration(w))
+			publish(&client, t.hubUrl, encodedPayload, h)
+			since := time.Since(begin)
+			durationStream <- since
+		}
+	}()
+
+	for duration := range durationStream {
+		fmt.Printf("%v taken to publish update\n", duration)
+	}
+}
+
+func NewTest(config *root.Config) (*Test, error) {
 	// TODO: pass context.Context and use req.WithContext(ctx)
 	env := config.Hermes.ActiveEnv
 	var hubUrl, secret string
@@ -71,24 +124,6 @@ func NewTest(config *root.Config, headers http.Header) (*Test, error) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	jwtToken, err := m.CreateToken("123456", fmt.Sprintf("%s/%s", config.Hermes.TopicUri, config.Hermes.EventType), time.Minute*15)
-	if err != nil {
-		log.Fatalln(err)
-	}
 
-	payload := generateMockSseData(config.Hermes.TopicUri, config.Hermes.EventType)
-	encodedPayload := payload.Encode()
-	req, err := http.NewRequest(http.MethodPost, hubUrl, strings.NewReader(encodedPayload))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, jwtToken))
-	if len(headers) > 0 {
-		for k, v := range headers {
-			req.Header.Set(k, strings.Join(v[:], ","))
-		}
-	}
-
-	return &Test{req: req, config: config, tokenMaker: &m}, nil
+	return &Test{config: config, tokenMaker: m, hubUrl: hubUrl}, nil
 }
