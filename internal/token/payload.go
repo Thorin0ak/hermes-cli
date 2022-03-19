@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-//type MercureClaims map[string]interface{}
-
 type Token struct {
 	Mercure map[string][]string `json:"mercure"`
 	jwt.StandardClaims

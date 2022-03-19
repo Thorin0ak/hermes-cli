@@ -21,12 +21,10 @@ func (m *JWTMaker) CreateToken(sub string, topic string, duration time.Duration)
 }
 
 func (m *JWTMaker) VerifyToken(token string) (*Token, error) {
-	fmt.Printf("and so it begins")
-
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			fmt.Printf("error determining signature algorithm")
+			fmt.Printf("error determining signature algorithm\n")
 			return nil, ErrInvalidToken
 		}
 		return []byte(m.secretKey), nil
@@ -34,7 +32,7 @@ func (m *JWTMaker) VerifyToken(token string) (*Token, error) {
 
 	jwtToken, err := jwt.ParseWithClaims(token, &Token{}, keyFunc)
 	if err != nil {
-		fmt.Printf("error parsing token")
+		fmt.Printf("error parsing token\n")
 		validationError, ok := err.(*jwt.ValidationError)
 		if ok && errors.Is(validationError.Inner, ErrExpiredToken) {
 			return nil, ErrExpiredToken
@@ -42,7 +40,6 @@ func (m *JWTMaker) VerifyToken(token string) (*Token, error) {
 		return nil, ErrInvalidToken
 	}
 
-	fmt.Printf("foo")
 	payload, ok := jwtToken.Claims.(*Token)
 	if !ok {
 		return nil, ErrInvalidToken

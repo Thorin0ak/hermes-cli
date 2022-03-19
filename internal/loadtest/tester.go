@@ -33,7 +33,7 @@ type Test struct {
 func generateMockSseData(topicUri string, evtType string) url.Values {
 	data := url.Values{}
 	data.Set("topic", topicUri)
-	data.Set("data", "yo")
+	data.Set("data", "mock")
 	data.Set("type", evtType)
 	data.Set("private", "on")
 	return data

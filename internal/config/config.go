@@ -7,6 +7,7 @@ import (
 	"os"
 )
 
+// TODO: fix path check and creation
 const jsonConfigFilePath = "/Users/albus/.pxcdev/hermes-cli/config.json"
 
 func GetConfig() (*root.Config, error) {
@@ -21,7 +22,7 @@ func GetConfig() (*root.Config, error) {
 		},
 	}
 
-	envs, err := loadJsonConfig()
+	envs, err := loadJsonConfig(jsonConfigFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +31,8 @@ func GetConfig() (*root.Config, error) {
 	return config, nil
 }
 
-func loadJsonConfig() (*root.MercureEnvs, error) {
-	jsonFile, err := os.Open(jsonConfigFilePath)
+func loadJsonConfig(filePath string) (*root.MercureEnvs, error) {
+	jsonFile, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +44,6 @@ func loadJsonConfig() (*root.MercureEnvs, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//for i := 0; i < len(envs.Envs); i++ {
-	//	fmt.Println("Env name: " + envs.Envs[i].Name)
-	//}
 
 	return &envs, nil
 }
