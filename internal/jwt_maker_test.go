@@ -1,4 +1,4 @@
-package token
+package internal
 
 import (
 	"github.com/Thorin0ak/mercure-test/pkg/utils"

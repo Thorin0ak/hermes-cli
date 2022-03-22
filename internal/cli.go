@@ -1,15 +1,13 @@
-package hermescli
+package internal
 
 import (
 	"fmt"
-	root "github.com/Thorin0ak/mercure-test/internal"
-	test2 "github.com/Thorin0ak/mercure-test/internal/loadtest"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 	"log"
 )
 
-func NewCli(config *root.Config) *cli.App {
+func NewCli(config *Config) *cli.App {
 	return &cli.App{
 		Name:  "Mercure Testing CLI",
 		Usage: "CLI to publish events to Mercure Hub",
@@ -47,7 +45,7 @@ func NewCli(config *root.Config) *cli.App {
 			}
 
 			//fmt.Printf("You chose %q\n", result)
-			var env root.MercureConfig
+			var env MercureConfig
 			for _, data := range config.Mercure.Envs {
 				if data.Name == result {
 					env = data
@@ -60,7 +58,7 @@ func NewCli(config *root.Config) *cli.App {
 			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
 
 			// TODO: get new test, run test
-			test, err := test2.NewTest(config)
+			test, err := NewOrchestrator(config)
 			if err != nil {
 				log.Fatalln(err)
 			}

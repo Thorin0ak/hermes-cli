@@ -1,4 +1,10 @@
-package root
+package internal
+
+import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+)
 
 type HermesConfig struct {
 	TopicUri     string
@@ -22,4 +28,45 @@ type MercureConfig struct {
 type Config struct {
 	Hermes  *HermesConfig
 	Mercure *MercureEnvs
+}
+
+// TODO: fix path check and creation
+const jsonConfigFilePath = "/Users/albus/.pxcdev/hermes-cli/config.json"
+
+func GetConfig() (*Config, error) {
+	config := &Config{
+		Hermes: &HermesConfig{
+			TopicUri:     "sse:pxc.dev/123456/",
+			EventType:    "test_mercure_events",
+			NumEvents:    5,
+			MinWaitTimes: 0,
+			MaxWaitTimes: 2000,
+			ActiveEnv:    "localhost",
+		},
+	}
+
+	envs, err := loadJsonConfig(jsonConfigFilePath)
+	if err != nil {
+		return nil, err
+	}
+	config.Mercure = envs
+
+	return config, nil
+}
+
+func loadJsonConfig(filePath string) (*MercureEnvs, error) {
+	jsonFile, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	var envs MercureEnvs
+	err = json.Unmarshal(byteValue, &envs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envs, nil
 }

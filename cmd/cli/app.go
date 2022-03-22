@@ -2,29 +2,26 @@ package main
 
 import (
 	"fmt"
-	root "github.com/Thorin0ak/mercure-test/internal"
-	"github.com/Thorin0ak/mercure-test/internal/config"
-	"github.com/Thorin0ak/mercure-test/internal/hermescli"
-	"github.com/Thorin0ak/mercure-test/internal/loadtest"
+	"github.com/Thorin0ak/mercure-test/internal"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
 )
 
 type HermesCli struct {
-	config *root.Config
+	config *internal.Config
 	app    *cli.App
-	test   *loadtest.Test
+	test   *internal.Orchestrator
 }
 
 func (h *HermesCli) Initialize() {
 	fmt.Println("Initializing the SSE testing tool...")
-	hConf, err := config.GetConfig()
+	hConf, err := internal.GetConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 	h.config = hConf
-	h.app = hermescli.NewCli(h.config)
+	h.app = internal.NewCli(h.config)
 }
 
 func (h *HermesCli) Run() {

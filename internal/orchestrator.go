@@ -1,9 +1,7 @@
-package loadtest
+package internal
 
 import (
 	"fmt"
-	root "github.com/Thorin0ak/mercure-test/internal"
-	"github.com/Thorin0ak/mercure-test/internal/token"
 	"github.com/cheggaaa/pb/v3"
 	"io/ioutil"
 	"log"
@@ -20,13 +18,9 @@ const (
 	authorizationHeaderFormat = "Bearer %s"
 )
 
-type Tester interface {
-	Run() error
-}
-
-type Test struct {
-	config     *root.Config
-	tokenMaker token.Maker
+type Orchestrator struct {
+	config     *Config
+	tokenMaker Maker
 	hubUrl     string
 }
 
@@ -65,7 +59,7 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 	//log.Printf("Mercure ACK: %v\n", string(body))
 }
 
-func (t *Test) Run(headers http.Header) {
+func (t *Orchestrator) Run(headers http.Header) {
 	client := http.Client{}
 	durationStream := make(chan time.Duration)
 	var err error
@@ -108,7 +102,7 @@ func (t *Test) Run(headers http.Header) {
 	bar.Finish()
 }
 
-func NewTest(config *root.Config) (*Test, error) {
+func NewOrchestrator(config *Config) (*Orchestrator, error) {
 	// TODO: pass context.Context and use req.WithContext(ctx)
 	env := config.Hermes.ActiveEnv
 	var hubUrl, secret string
@@ -124,10 +118,10 @@ func NewTest(config *root.Config) (*Test, error) {
 		log.Fatal(errMsg)
 	}
 
-	m, err := token.NewJWTMaker(secret)
+	m, err := NewJWTMaker(secret)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	return &Test{config: config, tokenMaker: m, hubUrl: hubUrl}, nil
+	return &Orchestrator{config: config, tokenMaker: m, hubUrl: hubUrl}, nil
 }
