@@ -81,6 +81,32 @@ func (t *Orchestrator) Run(headers http.Header) {
 		}
 	}
 
+	h2 := http.Header{}
+	h2.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
+	evtUrl := fmt.Sprintf("%v?topic=%v", t.hubUrl, t.config.Hermes.TopicUri)
+	stream, err := NewEventSource(evtUrl, h2)
+	if err != nil {
+		log.Fatalln(err)
+		return
+	}
+	defer stream.Close()
+
+	sub, err := stream.Subscribe(t.config.Hermes.EventType)
+	if err != nil {
+		log.Printf("error with subscription: %v", err)
+		return
+	}
+	defer sub.Close()
+	for {
+		select {
+		case evt := <-sub.stream:
+			log.Print(evt)
+		case err := <-sub.errStream:
+			log.Fatal(err)
+			return
+		}
+	}
+
 	payload := generateMockSseData(t.config.Hermes.TopicUri, t.config.Hermes.EventType)
 	encodedPayload := payload.Encode()
 

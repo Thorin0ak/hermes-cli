@@ -36,7 +36,8 @@ func (p *Token) Valid() error {
 func NewPayload(sub string, topic string, duration time.Duration) *Token {
 	pClaim := []string{topic}
 	cMap := make(map[string][]string)
-	cMap["publish"] = pClaim
+	//cMap["publish"] = pClaim
+	cMap["subscribe"] = pClaim
 	return &Token{
 		cMap,
 		jwt.StandardClaims{
