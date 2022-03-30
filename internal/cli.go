@@ -1,17 +1,52 @@
 package internal
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
+	"io/fs"
+	"io/ioutil"
 	"log"
+	"net/url"
+	"os"
 )
+
+func loadMercureEnvs(config *Config) error {
+	filePath := config.Hermes.configFilePath
+	_, err := url.Parse(filePath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(filePath); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("cannot read from file: '%s' because it does not exist", filePath)
+		}
+		return fmt.Errorf("cannot read from file: '%s'", filePath)
+	}
+	byteValue, _ := ioutil.ReadFile(filePath)
+	var m MercureEnvs
+	err = json.Unmarshal(byteValue, &m)
+	if err != nil {
+		return fmt.Errorf("cannot process config file: '%s'", filePath)
+	}
+	config.Mercure = &m
+
+	return nil
+}
 
 func NewCli(config *Config) *cli.App {
 	return &cli.App{
 		Name:  "Mercure Testing CLI",
 		Usage: "CLI to publish events to Mercure Hub",
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config",
+				Value:       "sample-config.json",
+				Usage:       "Load Mercure configuration from `FILE`",
+				Destination: &config.Hermes.configFilePath,
+			},
 			&cli.IntFlag{
 				Name:        "numEvents",
 				Aliases:     []string{"n"},
@@ -28,6 +63,10 @@ func NewCli(config *Config) *cli.App {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			if err := loadMercureEnvs(config); err != nil {
+				log.Fatalln(err)
+			}
+
 			var envs []string
 			for i := 0; i < len(config.Mercure.Envs); i++ {
 				envs = append(envs, config.Mercure.Envs[i].Name)
@@ -63,7 +102,7 @@ func NewCli(config *Config) *cli.App {
 				log.Fatalln(err)
 			}
 
-			test.Run(nil)
+			test.Run(nil, nil)
 
 			return nil
 		},

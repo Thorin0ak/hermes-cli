@@ -8,7 +8,7 @@ import (
 )
 
 type Maker interface {
-	CreateToken(sub string, topic string, duration time.Duration) (string, error)
+	CreateToken(sub string, topic string, duration time.Duration, isPublisher bool) (string, error)
 	VerifyToken(token string) (*Token, error)
 }
 
@@ -33,11 +33,14 @@ func (p *Token) Valid() error {
 	return nil
 }
 
-func NewPayload(sub string, topic string, duration time.Duration) *Token {
+func NewPayload(sub string, topic string, duration time.Duration, isPublisher bool) *Token {
 	pClaim := []string{topic}
 	cMap := make(map[string][]string)
-	//cMap["publish"] = pClaim
-	cMap["subscribe"] = pClaim
+	if isPublisher {
+		cMap["publish"] = pClaim
+	} else {
+		cMap["subscribe"] = pClaim
+	}
 	return &Token{
 		cMap,
 		jwt.StandardClaims{
@@ -51,8 +54,8 @@ func NewPayload(sub string, topic string, duration time.Duration) *Token {
 
 const minSecretKeySize = 32
 
-func (m *JWTMaker) CreateToken(sub string, topic string, duration time.Duration) (string, error) {
-	p := NewPayload(sub, topic, duration)
+func (m *JWTMaker) CreateToken(sub string, topic string, duration time.Duration, isPublisher bool) (string, error) {
+	p := NewPayload(sub, topic, duration, isPublisher)
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, p)
 	return jwtToken.SignedString([]byte(m.secretKey))

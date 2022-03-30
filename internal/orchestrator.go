@@ -59,20 +59,13 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 	//log.Printf("Mercure ACK: %v\n", string(body))
 }
 
-func (t *Orchestrator) Run(headers http.Header) {
-	client := http.Client{}
-	durationStream := make(chan time.Duration)
-	var err error
-	bar := pb.StartNew(t.config.Hermes.NumEvents)
-	bar.SetWriter(os.Stdout)
-
-	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15)
+func (t *Orchestrator) subscribe(headers http.Header) {
+	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, false)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	h := http.Header{}
-	h.Set("Content-Type", "application/x-www-form-urlencoded")
 	h.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
 	// override headers
 	if len(headers) > 0 {
@@ -81,10 +74,8 @@ func (t *Orchestrator) Run(headers http.Header) {
 		}
 	}
 
-	h2 := http.Header{}
-	h2.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
 	evtUrl := fmt.Sprintf("%v?topic=%v", t.hubUrl, t.config.Hermes.TopicUri)
-	stream, err := NewEventSource(evtUrl, h2)
+	stream, err := NewEventSource(evtUrl, h)
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -104,6 +95,31 @@ func (t *Orchestrator) Run(headers http.Header) {
 		case err := <-sub.errStream:
 			log.Fatal(err)
 			return
+		}
+	}
+}
+
+func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
+	client := http.Client{}
+	durationStream := make(chan time.Duration)
+	// Progress bar
+	bar := pb.StartNew(t.config.Hermes.NumEvents)
+	bar.SetWriter(os.Stdout)
+
+	go t.subscribe(subHeaders)
+
+	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, true)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	h := http.Header{}
+	h.Set("Content-Type", "application/x-www-form-urlencoded")
+	h.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
+	// override headers
+	if len(pubHeaders) > 0 {
+		for k, v := range pubHeaders {
+			h.Set(k, strings.Join(v[:], ","))
 		}
 	}
 
@@ -149,5 +165,5 @@ func NewOrchestrator(config *Config) (*Orchestrator, error) {
 		log.Fatalln(err)
 	}
 
-	return &Orchestrator{config: config, tokenMaker: m, hubUrl: hubUrl}, nil
+	return &Orchestrator{config, m, hubUrl}, nil
 }

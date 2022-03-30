@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"github.com/Thorin0ak/mercure-test/pkg/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/require"
@@ -22,7 +23,7 @@ func TestNewJWTMaker(t *testing.T) {
 	issuedAt := time.Now()
 	expiredAt := issuedAt.Add(duration)
 
-	token, err := m.CreateToken(sub, topic, duration)
+	token, err := m.CreateToken(sub, topic, duration, true)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -44,7 +45,7 @@ func TestExpiredJWTToken(t *testing.T) {
 	topic := "sse://foo.bar/tutu"
 	duration := -time.Minute
 
-	token, err := m.CreateToken(sub, topic, duration)
+	token, err := m.CreateToken(sub, topic, duration, true)
 	require.NoError(t, err)
 	require.NotEmpty(t, token)
 
@@ -54,8 +55,30 @@ func TestExpiredJWTToken(t *testing.T) {
 	require.Nil(t, p)
 }
 
+func TestSubscribeJTWTToken(t *testing.T) {
+	m, err := NewJWTMaker(utils.RandomString(32))
+	require.NoError(t, err)
+
+	sub := utils.RandomString(8)
+	topic := "sse://foo.bar/tutu"
+	duration := time.Minute
+	isPublisher := false
+
+	token, err := m.CreateToken(sub, topic, duration, isPublisher)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	payload, err := m.VerifyToken(token)
+	require.NoError(t, err)
+	require.NotEmpty(t, payload)
+	customClaims := map[string][]string{
+		"subscribe": {topic},
+	}
+	require.Equal(t, payload.Mercure, customClaims)
+}
+
 func TestInvalidJWTTokenAlgNone(t *testing.T) {
-	p := NewPayload(utils.RandomString(8), "sse://foo.bar/tutu", time.Minute)
+	p := NewPayload(utils.RandomString(8), "sse://foo.bar/tutu", time.Minute, true)
 	require.NotEmpty(t, p)
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodNone, p)
@@ -69,4 +92,11 @@ func TestInvalidJWTTokenAlgNone(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, ErrInvalidToken.Error())
 	require.Nil(t, payload)
+}
+
+func TestInvalidSecretKey(t *testing.T) {
+	m, err := NewJWTMaker(utils.RandomString(2))
+	errMsg := fmt.Sprintf("invalid key size: must be at least %d chars", minSecretKeySize)
+	require.EqualErrorf(t, err, errMsg, "")
+	require.Nil(t, m)
 }
