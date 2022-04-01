@@ -6,7 +6,7 @@ import (
 )
 
 func TestGetConfig(t *testing.T) {
-	c, err := GetConfig()
-	assert.Empty(t, err)
+	c := GetConfig()
+	assert.NotEmpty(t, c)
 	assert.Equal(t, "sse:pxc.dev/123456/", c.Hermes.TopicUri)
 }

@@ -8,3 +8,4 @@ A simple CLI tool to send data to a Mercure Hub.
 # TODO
 - [ ] encrypt secrets
 - [ ] generate different types of mock payload
+- [ ] `sub` should be randomly generated, to ensure no collisions

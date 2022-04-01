@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -59,7 +61,7 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 	//log.Printf("Mercure ACK: %v\n", string(body))
 }
 
-func (t *Orchestrator) subscribe(headers http.Header) {
+func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer, headers http.Header) {
 	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, false)
 	if err != nil {
 		log.Fatalln(err)
@@ -67,7 +69,6 @@ func (t *Orchestrator) subscribe(headers http.Header) {
 
 	h := http.Header{}
 	h.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
-	// override headers
 	if len(headers) > 0 {
 		for k, v := range headers {
 			h.Set(k, strings.Join(v[:], ","))
@@ -91,7 +92,8 @@ func (t *Orchestrator) subscribe(headers http.Header) {
 	for {
 		select {
 		case evt := <-sub.stream:
-			log.Print(evt)
+			fmt.Fprintf(stdoutBuffer, "Mercure ACK: %v\n", evt)
+			wg.Done()
 		case err := <-sub.errStream:
 			log.Fatal(err)
 			return
@@ -105,8 +107,13 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	// Progress bar
 	bar := pb.StartNew(t.config.Hermes.NumEvents)
 	bar.SetWriter(os.Stdout)
+	// in-memory buffer to avoid writing to stdout while the progress bar is there
+	var stdoutBuff bytes.Buffer
+	defer stdoutBuff.WriteTo(os.Stdout)
 
-	go t.subscribe(subHeaders)
+	var wg sync.WaitGroup
+	wg.Add(t.config.Hermes.NumEvents)
+	go t.subscribe(&wg, &stdoutBuff, subHeaders)
 
 	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, true)
 	if err != nil {
@@ -116,7 +123,6 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	h := http.Header{}
 	h.Set("Content-Type", "application/x-www-form-urlencoded")
 	h.Set(authorizationHeader, fmt.Sprintf(authorizationHeaderFormat, token))
-	// override headers
 	if len(pubHeaders) > 0 {
 		for k, v := range pubHeaders {
 			h.Set(k, strings.Join(v[:], ","))
@@ -140,8 +146,10 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	}()
 
 	for range durationStream {
+		// TODO: collect data
 	}
 	bar.Finish()
+	wg.Wait()
 }
 
 func NewOrchestrator(config *Config) (*Orchestrator, error) {

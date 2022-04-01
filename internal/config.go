@@ -25,7 +25,7 @@ type Config struct {
 	Mercure *MercureEnvs
 }
 
-func GetConfig() (*Config, error) {
+func GetConfig() *Config {
 	config := &Config{
 		Hermes: &HermesConfig{
 			TopicUri:     "sse:pxc.dev/123456/",
@@ -37,5 +37,5 @@ func GetConfig() (*Config, error) {
 		},
 	}
 
-	return config, nil
+	return config
 }

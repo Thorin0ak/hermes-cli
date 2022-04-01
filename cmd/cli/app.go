@@ -16,10 +16,7 @@ type HermesCli struct {
 
 func (h *HermesCli) Initialize() {
 	fmt.Println("Initializing the SSE testing tool...")
-	hConf, err := internal.GetConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+	hConf := internal.GetConfig()
 	h.config = hConf
 	h.app = internal.NewCli(h.config)
 }
