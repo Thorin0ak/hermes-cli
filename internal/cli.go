@@ -83,7 +83,6 @@ func NewCli(config *Config) *cli.App {
 				return err
 			}
 
-			//fmt.Printf("You chose %q\n", result)
 			var env MercureConfig
 			for _, data := range config.Mercure.Envs {
 				if data.Name == result {
@@ -96,7 +95,6 @@ func NewCli(config *Config) *cli.App {
 			fmt.Printf("ENVIRONMENT: %s\n", env.Name)
 			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
 
-			// TODO: get new test, run test
 			test, err := NewOrchestrator(config)
 			if err != nil {
 				log.Fatalln(err)

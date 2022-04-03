@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
+	net "github.com/subchord/go-sse"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -46,7 +47,7 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 	if err != nil {
 		log.Fatalf("could not POST to Mercure Hub: %v\n", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode > 299 {
 		log.Printf("Mercure returned error code %v", resp.StatusCode)
@@ -57,8 +58,6 @@ func publish(client *http.Client, url string, payload string, headers http.Heade
 	if err != nil {
 		log.Printf("Could not parse response body: %v\n", err)
 	}
-
-	//log.Printf("Mercure ACK: %v\n", string(body))
 }
 
 func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer, headers http.Header) {
@@ -76,7 +75,7 @@ func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer,
 	}
 
 	evtUrl := fmt.Sprintf("%v?topic=%v", t.hubUrl, t.config.Hermes.TopicUri)
-	stream, err := NewEventSource(evtUrl, h)
+	stream, err := net.ConnectWithSSEFeed(evtUrl, h)
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -91,10 +90,10 @@ func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer,
 	defer sub.Close()
 	for {
 		select {
-		case evt := <-sub.stream:
+		case evt := <-sub.Feed():
 			fmt.Fprintf(stdoutBuffer, "Mercure ACK: %v\n", evt)
 			wg.Done()
-		case err := <-sub.errStream:
+		case err := <-sub.ErrFeed():
 			log.Fatal(err)
 			return
 		}
@@ -109,7 +108,7 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	bar.SetWriter(os.Stdout)
 	// in-memory buffer to avoid writing to stdout while the progress bar is there
 	var stdoutBuff bytes.Buffer
-	defer stdoutBuff.WriteTo(os.Stdout)
+	defer stdoutBuff.WriteTo(os.Stdout) //nolint:errcheck
 
 	var wg sync.WaitGroup
 	wg.Add(t.config.Hermes.NumEvents)
