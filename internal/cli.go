@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
+	"go.uber.org/zap"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -36,7 +37,7 @@ func loadMercureEnvs(config *Config) error {
 	return nil
 }
 
-func NewCli(config *Config) *cli.App {
+func NewCli(config *Config, logger *zap.SugaredLogger) *cli.App {
 	return &cli.App{
 		Name:  "Mercure Testing CLI",
 		Usage: "CLI to publish events to Mercure Hub",
@@ -64,7 +65,7 @@ func NewCli(config *Config) *cli.App {
 		},
 		Action: func(c *cli.Context) error {
 			if err := loadMercureEnvs(config); err != nil {
-				log.Fatalln(err)
+				logger.Fatal(err)
 			}
 
 			var envs []string
@@ -79,8 +80,7 @@ func NewCli(config *Config) *cli.App {
 			_, result, err := prompt.Run()
 
 			if err != nil {
-				fmt.Printf("Prompt failed %v\n", err)
-				return err
+				logger.Fatal(err)
 			}
 
 			var env MercureConfig
@@ -92,10 +92,10 @@ func NewCli(config *Config) *cli.App {
 			// set the active environment
 			config.Hermes.ActiveEnv = result
 
-			fmt.Printf("ENVIRONMENT: %s\n", env.Name)
-			fmt.Printf("MERCURE HUB URL: %s\n", env.HubUrl)
+			logger.Infof("ENVIRONMENT: %s", env.Name)
+			logger.Infof("MERCURE HUB URL: %s", env.HubUrl)
 
-			test, err := NewOrchestrator(config)
+			test, err := NewOrchestrator(config, logger)
 			if err != nil {
 				log.Fatalln(err)
 			}

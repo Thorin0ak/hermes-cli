@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	net "github.com/subchord/go-sse"
+	"go.uber.org/zap"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -25,6 +25,7 @@ type Orchestrator struct {
 	config     *Config
 	tokenMaker Maker
 	hubUrl     string
+	logger     *zap.SugaredLogger
 }
 
 func generateMockSseData(topicUri string, evtType string) url.Values {
@@ -36,34 +37,33 @@ func generateMockSseData(topicUri string, evtType string) url.Values {
 	return data
 }
 
-func publish(client *http.Client, url string, payload string, headers http.Header) {
+func publish(client *http.Client, url string, payload string, headers http.Header, logger *zap.SugaredLogger) {
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(payload))
 	if err != nil {
-		log.Fatalf("Could not create new HTP request: %v", err)
+		logger.Fatalf("Could not create new HTTP request: %v", err)
 	}
 	req.Header = headers
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("could not POST to Mercure Hub: %v\n", err)
+		logger.Errorf("could not POST to Mercure Hub: %v\n", err)
+		return
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode > 299 {
-		log.Printf("Mercure returned error code %v", resp.StatusCode)
+		logger.Errorf("Mercure returned error code %v", resp.StatusCode)
 		return
 	}
 
-	_, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Could not parse response body: %v\n", err)
-	}
+	// this seems to be required to re-use the http client
+	ioutil.ReadAll(resp.Body) //nolint:errcheck
 }
 
-func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer, headers http.Header) {
-	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, false)
+func (o *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer, headers http.Header) {
+	token, err := o.tokenMaker.CreateToken("123456", o.config.Hermes.TopicUri, time.Minute*15, false)
 	if err != nil {
-		log.Fatalln(err)
+		o.logger.Fatal(err)
 	}
 
 	h := http.Header{}
@@ -74,49 +74,48 @@ func (t *Orchestrator) subscribe(wg *sync.WaitGroup, stdoutBuffer *bytes.Buffer,
 		}
 	}
 
-	evtUrl := fmt.Sprintf("%v?topic=%v", t.hubUrl, t.config.Hermes.TopicUri)
+	evtUrl := fmt.Sprintf("%v?topic=%v", o.hubUrl, o.config.Hermes.TopicUri)
 	stream, err := net.ConnectWithSSEFeed(evtUrl, h)
 	if err != nil {
-		log.Fatalln(err)
-		return
+		o.logger.Fatal(err)
 	}
 	defer stream.Close()
 
-	sub, err := stream.Subscribe(t.config.Hermes.EventType)
+	sub, err := stream.Subscribe(o.config.Hermes.EventType)
 	if err != nil {
-		log.Printf("error with subscription: %v", err)
+		o.logger.Errorf("error with subscription: %v", err)
 		return
 	}
 	defer sub.Close()
 	for {
 		select {
 		case evt := <-sub.Feed():
-			fmt.Fprintf(stdoutBuffer, "Mercure ACK: %v\n", evt)
+			fmt.Fprintf(stdoutBuffer, "Mercure Event: %v\n", evt)
 			wg.Done()
 		case err := <-sub.ErrFeed():
-			log.Fatal(err)
+			o.logger.Error(err)
 			return
 		}
 	}
 }
 
-func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
+func (o *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	client := http.Client{}
 	durationStream := make(chan time.Duration)
 	// Progress bar
-	bar := pb.StartNew(t.config.Hermes.NumEvents)
+	bar := pb.StartNew(o.config.Hermes.NumEvents)
 	bar.SetWriter(os.Stdout)
 	// in-memory buffer to avoid writing to stdout while the progress bar is there
 	var stdoutBuff bytes.Buffer
 	defer stdoutBuff.WriteTo(os.Stdout) //nolint:errcheck
 
 	var wg sync.WaitGroup
-	wg.Add(t.config.Hermes.NumEvents)
-	go t.subscribe(&wg, &stdoutBuff, subHeaders)
+	wg.Add(o.config.Hermes.NumEvents)
+	go o.subscribe(&wg, &stdoutBuff, subHeaders)
 
-	token, err := t.tokenMaker.CreateToken("123456", t.config.Hermes.TopicUri, time.Minute*15, true)
+	token, err := o.tokenMaker.CreateToken("123456", o.config.Hermes.TopicUri, time.Minute*15, true)
 	if err != nil {
-		log.Fatalln(err)
+		o.logger.Fatal(err)
 	}
 
 	h := http.Header{}
@@ -128,17 +127,17 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 		}
 	}
 
-	payload := generateMockSseData(t.config.Hermes.TopicUri, t.config.Hermes.EventType)
+	payload := generateMockSseData(o.config.Hermes.TopicUri, o.config.Hermes.EventType)
 	encodedPayload := payload.Encode()
 
 	go func() {
 		defer close(durationStream)
-		for i := 0; i < t.config.Hermes.NumEvents; i++ {
+		for i := 0; i < o.config.Hermes.NumEvents; i++ {
 			bar.Increment()
 			begin := time.Now()
-			w := rand.Intn(t.config.Hermes.MaxWaitTimes-t.config.Hermes.MinWaitTimes) + t.config.Hermes.MinWaitTimes
+			w := rand.Intn(o.config.Hermes.MaxWaitTimes-o.config.Hermes.MinWaitTimes) + o.config.Hermes.MinWaitTimes
 			time.Sleep(time.Millisecond * time.Duration(w))
-			publish(&client, t.hubUrl, encodedPayload, h)
+			publish(&client, o.hubUrl, encodedPayload, h, o.logger)
 			since := time.Since(begin)
 			durationStream <- since
 		}
@@ -151,7 +150,12 @@ func (t *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	wg.Wait()
 }
 
-func NewOrchestrator(config *Config) (*Orchestrator, error) {
+func GetDummy(config *Config, hubUrl string, secret string, logger *zap.SugaredLogger) *Orchestrator {
+	m, _ := NewJWTMaker(secret, logger)
+	return &Orchestrator{config, m, hubUrl, logger}
+}
+
+func NewOrchestrator(config *Config, logger *zap.SugaredLogger) (*Orchestrator, error) {
 	// TODO: pass context.Context and use req.WithContext(ctx)
 	env := config.Hermes.ActiveEnv
 	var hubUrl, secret string
@@ -163,14 +167,13 @@ func NewOrchestrator(config *Config) (*Orchestrator, error) {
 	}
 
 	if len(hubUrl) == 0 {
-		errMsg := fmt.Sprintf("no config found for active env %s", env)
-		log.Fatal(errMsg)
+		return nil, fmt.Errorf("no config found for active env %s", env)
 	}
 
-	m, err := NewJWTMaker(secret)
+	m, err := NewJWTMaker(secret, logger)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
-	return &Orchestrator{config, m, hubUrl}, nil
+	return &Orchestrator{config, m, hubUrl, logger}, nil
 }

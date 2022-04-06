@@ -5,12 +5,14 @@ import (
 	"github.com/Thorin0ak/mercure-test/pkg/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 )
 
 func TestNewJWTMaker(t *testing.T) {
-	m, err := NewJWTMaker(utils.RandomString(32))
+	logger, _ := utils.GetObservedLogger(zap.InfoLevel)
+	m, err := NewJWTMaker(utils.RandomString(32), logger)
 	require.NoError(t, err)
 
 	sub := utils.RandomString(8)
@@ -38,7 +40,8 @@ func TestNewJWTMaker(t *testing.T) {
 }
 
 func TestExpiredJWTToken(t *testing.T) {
-	m, err := NewJWTMaker(utils.RandomString(32))
+	logger, _ := utils.GetObservedLogger(zap.InfoLevel)
+	m, err := NewJWTMaker(utils.RandomString(32), logger)
 	require.NoError(t, err)
 
 	sub := utils.RandomString(8)
@@ -56,7 +59,8 @@ func TestExpiredJWTToken(t *testing.T) {
 }
 
 func TestSubscribeJTWTToken(t *testing.T) {
-	m, err := NewJWTMaker(utils.RandomString(32))
+	logger, _ := utils.GetObservedLogger(zap.InfoLevel)
+	m, err := NewJWTMaker(utils.RandomString(32), logger)
 	require.NoError(t, err)
 
 	sub := utils.RandomString(8)
@@ -85,7 +89,8 @@ func TestInvalidJWTTokenAlgNone(t *testing.T) {
 	token, err := jwtToken.SignedString(jwt.UnsafeAllowNoneSignatureType)
 	require.NoError(t, err)
 
-	m, err := NewJWTMaker(utils.RandomString(32))
+	logger, _ := utils.GetObservedLogger(zap.InfoLevel)
+	m, err := NewJWTMaker(utils.RandomString(32), logger)
 	require.NoError(t, err)
 
 	payload, err := m.VerifyToken(token)
@@ -95,7 +100,8 @@ func TestInvalidJWTTokenAlgNone(t *testing.T) {
 }
 
 func TestInvalidSecretKey(t *testing.T) {
-	m, err := NewJWTMaker(utils.RandomString(2))
+	logger, _ := utils.GetObservedLogger(zap.InfoLevel)
+	m, err := NewJWTMaker(utils.RandomString(2), logger)
 	errMsg := fmt.Sprintf("invalid key size: must be at least %d chars", minSecretKeySize)
 	require.EqualErrorf(t, err, errMsg, "")
 	require.Nil(t, m)

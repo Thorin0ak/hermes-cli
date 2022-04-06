@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/subchord/go-sse v1.0.7
 	github.com/urfave/cli/v2 v2.4.0
+	go.uber.org/zap v1.21.0
 )
 
 require (
@@ -25,6 +26,8 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
+	golang.org/x/sys v0.0.0-20210510120138-977fb7262007 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
