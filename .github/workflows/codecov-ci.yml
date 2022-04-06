@@ -1,0 +1,17 @@
+name: Test & publish code coverage
+on: [push]
+jobs:
+  test:
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.17.0'
+      - run: go test -v ./...
+      - uses: paambaati/codeclimate-action@v3
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        with:
+          coverageCommand: go test -coverprofile=cover.out ./...
+
