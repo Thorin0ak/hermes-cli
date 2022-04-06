@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"github.com/Thorin0ak/mercure-test/pkg/utils"
+	"github.com/Thorin0ak/hermes-cli/pkg/utils"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

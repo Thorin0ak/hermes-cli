@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/Thorin0ak/mercure-test/internal"
+	"github.com/Thorin0ak/hermes-cli/internal"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 	"log"

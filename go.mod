@@ -1,4 +1,4 @@
-module github.com/Thorin0ak/mercure-test
+module github.com/Thorin0ak/hermes-cli
 
 go 1.17
 
