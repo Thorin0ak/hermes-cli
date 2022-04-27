@@ -110,8 +110,10 @@ func (o *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 	defer stdoutBuff.WriteTo(os.Stdout) //nolint:errcheck
 
 	var wg sync.WaitGroup
-	wg.Add(o.config.Hermes.NumEvents)
-	go o.subscribe(&wg, &stdoutBuff, subHeaders)
+	if !o.config.Hermes.PublishOnly {
+		wg.Add(o.config.Hermes.NumEvents)
+		go o.subscribe(&wg, &stdoutBuff, subHeaders)
+	}
 
 	token, err := o.tokenMaker.CreateToken("123456", o.config.Hermes.TopicUri, time.Minute*15, true)
 	if err != nil {
@@ -147,7 +149,9 @@ func (o *Orchestrator) Run(pubHeaders http.Header, subHeaders http.Header) {
 		// TODO: collect data
 	}
 	bar.Finish()
-	wg.Wait()
+	if !o.config.Hermes.PublishOnly {
+		wg.Wait()
+	}
 }
 
 func GetDummy(config *Config, hubUrl string, secret string, logger *zap.SugaredLogger) *Orchestrator {

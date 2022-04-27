@@ -1,0 +1,12 @@
+version: 3
+
+tasks:
+  build:
+    cmds:
+      - go build -o hermes github.com/Thorin0ak/hermes-cli/cmd/cli
+  test:
+    cmds:
+      - go test -v ./...
+  lint:
+    cmds:
+      - golangci-lint run

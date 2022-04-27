@@ -7,6 +7,7 @@ type HermesConfig struct {
 	MaxWaitTimes   int
 	ActiveEnv      string
 	EventType      string
+	PublishOnly    bool
 	configFilePath string
 }
 
@@ -33,6 +34,7 @@ func GetConfig() *Config {
 			NumEvents:    5,
 			MinWaitTimes: 0,
 			MaxWaitTimes: 2000,
+			PublishOnly:  false,
 			ActiveEnv:    "localhost",
 		},
 	}

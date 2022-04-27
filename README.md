@@ -1,4 +1,4 @@
-[![Maintainability](https://api.codeclimate.com/v1/badges/dd9cec2adaa4d8a063d0/maintainability)](https://codeclimate.com/github/Thorin0ak/hermes-cli/maintainability)
+[![Maintainability](https://img.shields.io/badge/Go_report-A+-success?style=for-the-badge&logo=none)](https://goreportcard.com/report/github.com/Thorin0ak/hermes-cli)
 
 # HERMES-CLI
 A simple CLI tool to send data to a Mercure Hub.

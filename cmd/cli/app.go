@@ -12,7 +12,6 @@ import (
 type HermesCli struct {
 	config *internal.Config
 	app    *cli.App
-	test   *internal.Orchestrator
 	logger *zap.SugaredLogger
 }
 
