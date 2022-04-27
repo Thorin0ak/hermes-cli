@@ -1,5 +1,5 @@
 [![Maintainability](https://img.shields.io/badge/Go_report-A+-success)](https://goreportcard.com/report/github.com/Thorin0ak/hermes-cli)
-[![License: MIT](https://img.shields.io/badge/License-AGPL3.0-red.svg)](https://opensource.org/licenses/AGPL-3.0)
+[![License: MIT](https://img.shields.io/badge/License-AGPL3.0-blue.svg)](https://opensource.org/licenses/AGPL-3.0)
 
 # HERMES-CLI
 
