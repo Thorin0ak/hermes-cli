@@ -1,5 +1,5 @@
 [![Maintainability](https://img.shields.io/badge/Go_report-A+-success)](https://goreportcard.com/report/github.com/Thorin0ak/hermes-cli)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-AGPL3.0-red.svg)](https://opensource.org/licenses/AGPL-3.0)
 
 # HERMES-CLI
 A simple CLI tool to publish events to a Mercure Hub, and optionally also subscribe to receive them.
