@@ -44,12 +44,13 @@ func NewCli(config *Config, logger *zap.SugaredLogger) *cli.App {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "config",
+				Aliases:     []string{"c"},
 				Value:       "sample-config.json",
 				Usage:       "Load Mercure configuration from `FILE`",
 				Destination: &config.Hermes.configFilePath,
 			},
 			&cli.IntFlag{
-				Name:        "numEvents",
+				Name:        "num-events",
 				Aliases:     []string{"n"},
 				Value:       5,
 				Usage:       "Number of events to publish",
@@ -57,14 +58,14 @@ func NewCli(config *Config, logger *zap.SugaredLogger) *cli.App {
 			},
 			&cli.StringFlag{
 				Name:        "topic-uri",
-				Aliases:     []string{"uri"},
+				Aliases:     []string{"t"},
 				Value:       "sse://pxc.dev/123456/test_mercure_events",
-				Usage:       "Number of events to publish",
+				Usage:       "Topic URI used by Mercure to manage pub/sub",
 				Destination: &config.Hermes.TopicUri,
 			},
 			&cli.BoolFlag{
 				Name:        "publish-only",
-				Aliases:     []string{"pub"},
+				Aliases:     []string{"p"},
 				Usage:       "Only publish events, no client subscription",
 				Required:    false,
 				Value:       false,
