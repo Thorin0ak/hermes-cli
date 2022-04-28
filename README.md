@@ -26,7 +26,6 @@ project comes with a [sample config file](https://github.com/Thorin0ak/hermes-cl
 ```
 
 ![Recording of terminal demo](./myrecord.svg)
-<img src="./myrecord.svg">
 
 # ⚙️ Commands & Options
 
