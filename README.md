@@ -4,7 +4,7 @@
 
 # HERMES-CLI
 
-A simple CLI tool to publish events to a Mercure Hub, and optionally also subscribe to receive them.
+A simple CLI tool to publish events to a [Mercure Hub](https://mercure.rocks/), and optionally [subscribe](https://mercure.rocks/spec#subscription) to receive them.
 
 # ⚡️ Getting started
 
@@ -24,6 +24,9 @@ project comes with a [sample config file](https://github.com/Thorin0ak/hermes-cl
   ]
 }
 ```
+
+![Recording of terminal demo](./myrecord.svg)
+<img src="./myrecord.svg">
 
 # ⚙️ Commands & Options
 
