@@ -2,20 +2,27 @@ package main
 
 import (
 	"encoding/json"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
 	"github.com/Thorin0ak/hermes-cli/internal"
-	"github.com/urfave/cli/v2"
+	"github.com/Thorin0ak/hermes-cli/internal/ui"
 	"go.uber.org/zap"
-	"log"
-	"os"
 )
 
 type HermesCli struct {
 	config *internal.Config
-	app    *cli.App
+	app    *fyne.App
 	logger *zap.SugaredLogger
 }
 
 func (h *HermesCli) Initialize() {
+	h.logger = instantiateLogger()
+	h.logger.Info("Initializing the SSE testing tool...")
+	hConf := internal.GetConfig()
+	h.config = hConf
+}
+
+func instantiateLogger() *zap.SugaredLogger {
 	rawJSON := []byte(`{
 	  "level": "debug",
 	  "encoding": "console",
@@ -35,16 +42,15 @@ func (h *HermesCli) Initialize() {
 		panic(err)
 	}
 	sugar := logger.Sugar()
-	h.logger = sugar
-	sugar.Info("Initializing the SSE testing tool...")
-	hConf := internal.GetConfig()
-	h.config = hConf
-	h.app = internal.NewCli(h.config, h.logger)
+	return sugar
 }
 
 func (h *HermesCli) Run() {
-	err := h.app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
+	a := app.NewWithID("com.github.thorin0ak.hermes")
+	w := a.NewWindow("Hermes")
+	w.SetContent(ui.Create(a))
+
+	w.Resize(fyne.NewSize(700, 400))
+	w.SetMaster()
+	w.ShowAndRun()
 }
